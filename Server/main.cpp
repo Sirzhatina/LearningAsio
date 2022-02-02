@@ -1,10 +1,6 @@
 #include <boost/asio.hpp>
-#include <functional>
 #include <iostream>
 #include <vector>
-#include <ctime>
-#include <string>
-#include <chrono>
 
 
 int main(int argc, char* argv[])
@@ -21,34 +17,34 @@ int main(int argc, char* argv[])
     using socket     = ip::tcp::socket;
     using error_code = boost::system::error_code;
 
-    socket client(io);
-    error_code ec;
+    std::vector<socket> connections;
 
-    acc.accept(client, ec);
-
-    if (ec)
+    acc.async_accept([&connections](const error_code& ec, socket sock)
     {
-        std::cerr << "Failed connection.";
-        return EXIT_FAILURE;
-    }
+        if (!ec)
+        {
+            std::uint16_t data = 232;
+            std::size_t size = sizeof(std::uint16_t);
 
-    std::uint16_t data = 232;
-    std::size_t size = sizeof(std::uint16_t);
-
-    std::size_t bytesWritten = write(client, buffer(&data, size), ec);
-
-    if (ec)
-    {
-        std::cout << "Failed writing";
-        return EXIT_FAILURE;
-    }
-    if (size != bytesWritten)
-    {
-        std::cout << "Size and written bytes differ";
-        return EXIT_FAILURE;
-    }
-    
-    std::cout << "Data has been successfully written: " << data;
+            async_write(sock, buffer(&data, size), [size, data](const boost::system::error_code& ec, std::size_t writtenBytes)
+            {
+                if (ec)
+                {
+                    std::cout << "Failed writing";
+                }
+                if (size != writtenBytes)
+                {
+                    std::cout << "Size and written bytes differ";
+                }
+                std::cout << "Data has been successfully written: " << data;
+            });
+            connections.emplace_back(std::move(sock));
+        }
+        else
+        {
+            std::cerr << "Failed connection";
+        }
+    });
 
     io.run();
     return 0;
