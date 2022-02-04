@@ -14,5 +14,6 @@ conan_cmake_run(CONANFILE conanfile.txt
                 BASIC_SETUP CMAKE_TARGETS
                 BUILD missing)
 
+add_subdirectory(Common)
 add_subdirectory(Client)
 add_subdirectory(Server)
