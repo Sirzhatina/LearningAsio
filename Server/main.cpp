@@ -2,6 +2,8 @@
 #include <iostream>
 #include <vector>
 #include <Common/Common.hpp>
+#include <string>
+#include <ctime>
 
 
 int main(int argc, char* argv[])
@@ -20,30 +22,54 @@ int main(int argc, char* argv[])
 
     std::vector<socket> connections;
 
-    Header data = 232;
-    std::size_t size = sizeof(Header);
+    std::time_t moment;
+    std::string msg;
+    Header msgSize = 0;
 
-    acc.async_accept([&connections, &data, &size](const error_code& ec, socket sock)
+    acc.async_accept([&connections, &msgSize, &moment, &msg](const error_code& ec, socket sock)
     {
         if (!ec)
         {
-            async_write(sock, buffer(&data, size), [&size, &data](const boost::system::error_code& ec, std::size_t writtenBytes)
-            {
-                if (ec)
-                {
-                    std::cout << "Failed writing";
-                }
-                if (size != writtenBytes)
-                {
-                    std::cout << "Size and written bytes differ";
-                }
-                std::cout << "Data has been successfully written: " << data;
-            });
             connections.emplace_back(std::move(sock));
+        
+            moment = std::time(nullptr);
+            msg = std::string("Connection established at ") + std::ctime(&moment);
+            msgSize = msg.size();
+
+            async_write(connections.back(), buffer(&msgSize, headerSize), [&connections, &sock, &msgSize, &msg](const error_code& ec, std::size_t writtenBytes)
+            {
+                if (!ec)
+                {
+                    std::cout << "Header has been successfully written." << std::endl;
+                    
+                    error_code err;
+                    std::size_t bytes = write(connections.back(), buffer(msg, msgSize), err);
+                    if (!err)
+                    {
+                        std::cout << "Body has been successfully written.";
+                    }
+                    else
+                    {
+                        std::cout << "Failed writing body\n" << err.value() << ": " << err.message();
+                    }
+                    if (msgSize != bytes)
+                    {
+                        std::cout << "\nSize and written bytes of body differ";
+                    }
+                }
+                else
+                {
+                    std::cout << "Failed writing header\n" << ec.value() << ": " << ec.message();
+                }
+                if (headerSize != writtenBytes)
+                {
+                    std::cout << "\nSize and written bytes differ";
+                }
+            });
         }
         else
         {
-            std::cerr << "Failed connection";
+            std::cerr << "Failed connection.\n" << ec.value() << ": " << ec.message();
         }
     });
 
