@@ -18,30 +18,34 @@ int main(int argc, char* argv[])
     ip::tcp::socket sock(io, { ip::tcp::v4(), currentPort });
     ip::tcp::endpoint remote{ ip::address::from_string(argv[1]), ip::port_type(std::stoul(argv[2])) };
 
-    boost::system::error_code ec;
-    sock.connect(remote, ec);
-    if (ec)
-    {
-        std::cout << "Failed connection";
-        return EXIT_FAILURE;
-    }
-
     std::uint16_t data;
     std::size_t size = sizeof(std::uint16_t);
 
-    std::size_t bytesRead = read(sock, buffer(&data, size), ec);
+    sock.async_connect(remote, [&sock, &data, &size](const boost::system::error_code& ec)
+    {
+        if (!ec)
+        {
+            boost::system::error_code ec;
+            std::size_t bytesRead = read(sock, buffer(&data, size), ec);
 
-    if (ec)
-    {
-        std::cout << "Failed reading data";
-        return EXIT_FAILURE;
-    }
-    if (size != bytesRead)
-    {
-        std::cout << "Expected and read sizes differ";
-        return EXIT_FAILURE;
-    }
-    std::cout << "Data has been read successfully: " << data;
+            if (!ec)
+            {
+                std::cout << "Data has been read successfully: " << data;
+            }
+            else
+            {
+                std::cout << "Failed reading data";
+            }
+            if (size != bytesRead)
+            {
+                std::cout << "\nExpected and read sizes differ";
+            }
+        }
+        else
+        {
+            std::cout << "Failed connection";
+        }
+    });
 
     io.run();
     return 0;
