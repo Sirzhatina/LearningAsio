@@ -1,6 +1,7 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <vector>
+#include <Common/Common.hpp>
 
 
 int main(int argc, char* argv[])
@@ -19,8 +20,8 @@ int main(int argc, char* argv[])
 
     std::vector<socket> connections;
 
-    std::uint16_t data = 232;
-    std::size_t size = sizeof(std::uint16_t);
+    Header data = 232;
+    std::size_t size = sizeof(Header);
 
     acc.async_accept([&connections, &data, &size](const error_code& ec, socket sock)
     {
