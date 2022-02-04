@@ -25,21 +25,21 @@ int main(int argc, char* argv[])
     {
         if (!ec)
         {
-            boost::system::error_code ec;
-            std::size_t bytesRead = read(sock, buffer(&data, size), ec);
-
-            if (!ec)
+            async_read(sock, buffer(&data, size), [&data, &size](const boost::system::error_code& ec, std::size_t read)
             {
-                std::cout << "Data has been read successfully: " << data;
-            }
-            else
-            {
-                std::cout << "Failed reading data";
-            }
-            if (size != bytesRead)
-            {
-                std::cout << "\nExpected and read sizes differ";
-            }
+                if (!ec)
+                {
+                    std::cout << "Data has been read successfully: " << data;
+                }
+                else
+                {
+                    std::cout << "Failed reading data";
+                }
+                if (size != read)
+                {
+                    std::cout << "\nExpected and read sizes differ";
+                }
+            });
         }
         else
         {
