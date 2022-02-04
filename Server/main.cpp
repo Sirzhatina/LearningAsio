@@ -19,14 +19,14 @@ int main(int argc, char* argv[])
 
     std::vector<socket> connections;
 
-    acc.async_accept([&connections](const error_code& ec, socket sock)
+    std::uint16_t data = 232;
+    std::size_t size = sizeof(std::uint16_t);
+
+    acc.async_accept([&connections, &data, &size](const error_code& ec, socket sock)
     {
         if (!ec)
         {
-            std::uint16_t data = 232;
-            std::size_t size = sizeof(std::uint16_t);
-
-            async_write(sock, buffer(&data, size), [size, data](const boost::system::error_code& ec, std::size_t writtenBytes)
+            async_write(sock, buffer(&data, size), [&size, &data](const boost::system::error_code& ec, std::size_t writtenBytes)
             {
                 if (ec)
                 {
