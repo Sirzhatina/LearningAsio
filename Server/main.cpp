@@ -41,21 +41,22 @@ int main(int argc, char* argv[])
                 if (!ec)
                 {
                     std::cout << "Header has been successfully written." << std::endl;
-                    
-                    error_code err;
-                    std::size_t bytes = write(connections.back(), buffer(msg, msgSize), err);
-                    if (!err)
+
+                    async_write(connections.back(), buffer(msg, msgSize), [&msgSize](const error_code &ec, std::size_t bytes)
                     {
-                        std::cout << "Body has been successfully written.";
-                    }
-                    else
-                    {
-                        std::cout << "Failed writing body\n" << err.value() << ": " << err.message();
-                    }
-                    if (msgSize != bytes)
-                    {
-                        std::cout << "\nSize and written bytes of body differ";
-                    }
+                        if (!ec)
+                        {
+                            std::cout << "Body has been successfully written.";
+                        }
+                        else
+                        {
+                            std::cout << "Failed writing body\n" << ec.value() << ": " << ec.message();
+                        }
+                        if (msgSize != bytes)
+                        {
+                            std::cout << "\nSize and written bytes of body differ";
+                        }
+                    });
                 }
                 else
                 {

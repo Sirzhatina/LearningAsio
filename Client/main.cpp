@@ -33,21 +33,21 @@ int main(int argc, char* argv[])
                     std::cout << "Header has been read successfully." << std::endl;
                     msg.resize(msgSize);
 
-                    boost::system::error_code err;
-                    std::size_t bytes = read(sock, buffer(msg, msgSize), err);
-
-                    if (!err)
+                    async_read(sock, buffer(msg, msgSize), [&msgSize](const boost::system::error_code& ec, std::size_t bytes)
                     {
-                        std::cout << "Body has been read successfully.";
-                    }
-                    else
-                    {
-                        std::cout << "Failed reading body.\n" << err.value() << ": " << err.message();
-                    }
-                    if (bytes != msgSize)
-                    {
-                        std::cout << "\nmsgSize and read bytes differ";
-                    }
+                        if (!ec)
+                        {
+                            std::cout << "Body has been read successfully.";
+                        }
+                        else
+                        {
+                            std::cout << "Failed reading body.\n" << ec.value() << ": " << ec.message();
+                        }
+                        if (bytes != msgSize)
+                        {
+                            std::cout << "\nmsgSize and read bytes differ";
+                        }
+                    });
                 }
                 else
                 {
