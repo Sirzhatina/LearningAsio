@@ -22,48 +22,54 @@ int main(int argc, char* argv[])
     std::string msg;
     Header msgSize;
 
-    sock.async_connect(remote, [&sock, &msg, &msgSize](const boost::system::error_code& ec)
+    auto bodyHandler = [&msgSize](const boost::system::error_code& ec, std::size_t bytes)
     {
         if (!ec)
         {
-            async_read(sock, buffer(&msgSize, headerSize), [&sock, &msg, &msgSize](const boost::system::error_code& ec, std::size_t readBytes)
-            {
-                if (!ec)
-                {
-                    std::cout << "Header has been read successfully." << std::endl;
-                    msg.resize(msgSize);
+            std::cout << "Body has been read successfully.\n";
+        }
+        else
+        {
+            std::cout << "Failed reading body.\n" << ec.value() << ": " << ec.message();
+        }
+        if (bytes != msgSize)
+        {
+            std::cout << "\nmsgSize and read bytes differ";
+        }
+    };
 
-                    async_read(sock, buffer(msg, msgSize), [&msgSize](const boost::system::error_code& ec, std::size_t bytes)
-                    {
-                        if (!ec)
-                        {
-                            std::cout << "Body has been read successfully.";
-                        }
-                        else
-                        {
-                            std::cout << "Failed reading body.\n" << ec.value() << ": " << ec.message();
-                        }
-                        if (bytes != msgSize)
-                        {
-                            std::cout << "\nmsgSize and read bytes differ";
-                        }
-                    });
-                }
-                else
-                {
-                    std::cout << "Failed reading header.\n" << ec.value()  << ": " << ec.message();
-                }
-                if (headerSize != readBytes)
-                {
-                    std::cout << "\nExpected and read sizes differ";
-                }
-            });
+    auto headerHandler = [&sock, &msg, &msgSize, &bodyHandler](const boost::system::error_code& ec, std::size_t bytes)
+    {
+        if (!ec)
+        {
+            std::cout << "Header has been read successfully." << std::endl;
+            msg.resize(msgSize);
+
+            async_read(sock, buffer(msg, msgSize), bodyHandler);
+        }
+        else
+        {
+            std::cout << "Failed reading header.\n" << ec.value()  << ": " << ec.message();
+        }
+        if (headerSize != bytes)
+        {
+            std::cout << "\nExpected and read sizes differ";
+        }
+    };
+
+    auto connectionHandler = [&sock, &msg, &msgSize, &headerHandler](const boost::system::error_code& ec)
+    {
+        if (!ec)
+        {
+            async_read(sock, buffer(&msgSize, headerSize), headerHandler);
         }
         else
         {
             std::cout << "Failed connection.\n" << ec.value() << ": " << ec.message();
         }
-    });
+    };
+
+    sock.async_connect(remote, connectionHandler);
 
     io.run();
     std::cout << msg;
