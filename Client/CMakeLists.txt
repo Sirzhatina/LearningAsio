@@ -1,7 +1,8 @@
 set(TARGET Client)
 
-set(CPP main.cpp)
+set(HPP          Client.hpp)
+set(CPP main.cpp Client.cpp)
 
-add_executable(${TARGET} ${CPP})
+add_executable(${TARGET} ${HPP} ${CPP})
 
 target_link_libraries(${TARGET} PRIVATE CONAN_PKG::boost Common)
